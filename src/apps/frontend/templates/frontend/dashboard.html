@@ -1,0 +1,107 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Дашборд | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <p class="eyebrow">Операционный центр</p>
+      <h1>Сводка на {{ today|date:"d.m.Y" }}</h1>
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    <article class="kpi-card">
+      <h2>Приемы сегодня</h2>
+      <p>{{ appointments_today|default:"-" }}</p>
+    </article>
+    <article class="kpi-card">
+      <h2>Живая очередь</h2>
+      <p>{{ queue_waiting|default:"-" }}</p>
+    </article>
+    <article class="kpi-card">
+      <h2>Визиты в работе</h2>
+      <p>{{ in_progress_visits|default:"-" }}</p>
+    </article>
+    <article class="kpi-card">
+      <h2>Лаборатория активна</h2>
+      <p>{{ open_lab_orders|default:"-" }}</p>
+    </article>
+    <article class="kpi-card">
+      <h2>Просроченные задачи</h2>
+      <p>{{ overdue_tasks|default:"-" }}</p>
+    </article>
+  </section>
+
+  <section class="grid-two">
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Последние визиты</h2>
+      </header>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Пациент</th>
+              <th>Владелец</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for visit in recent_visits %}
+              <tr>
+                <td>#{{ visit.id }}</td>
+                <td>{{ visit.pet.name }}</td>
+                <td>{{ visit.owner.last_name }} {{ visit.owner.first_name }}</td>
+                <td><span class="badge">{{ visit.get_status_display }}</span></td>
+                <td>
+                  {% if perms.visits.view_visit %}
+                    <a href="{% url 'frontend:visit-detail' visit.id %}" class="table-link">Открыть</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="muted">Нет данных</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Лаборатория сегодня</h2>
+      </header>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Заказ</th>
+              <th>Пациент</th>
+              <th>Статус</th>
+              <th>SLA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in today_orders %}
+              <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.visit.pet.name }}</td>
+                <td><span class="badge">{{ order.get_status_display }}</span></td>
+                <td>{{ order.sla_minutes }} мин</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="muted">Заказов нет</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+{% endblock %}

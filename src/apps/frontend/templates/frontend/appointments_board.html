@@ -1,0 +1,116 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Табло приемов | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Очередь</p>
+      <h1>Табло приемов</h1>
+    </div>
+    <div class="actions-inline">
+      {% if perms.visits.add_appointment %}
+        <a href="{% url 'frontend:appointment-create' %}" class="btn btn-primary">Новая запись</a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <form method="get" class="toolbar">
+      <label class="toolbar-label">
+        <span>Дата</span>
+        <input
+          type="date"
+          name="date"
+          value="{{ selected_date|date:'Y-m-d' }}"
+          class="form-input"
+        >
+      </label>
+      <button type="submit" class="btn btn-ghost">Показать</button>
+    </form>
+  </section>
+
+  <section class="board-grid">
+    {% for column in columns %}
+      <article class="board-column">
+        <header>
+          <h2>{{ column.label }}</h2>
+          <span>{{ column.items|length }}</span>
+        </header>
+
+        <div class="board-stack">
+          {% for appointment in column.items %}
+            <section class="ticket">
+              <div class="ticket-head">
+                <strong>{{ appointment.pet.name }}</strong>
+                <small>#{{ appointment.id }}</small>
+              </div>
+              <p>{{ appointment.owner.last_name }} {{ appointment.owner.first_name }}</p>
+              <p>
+                {{ appointment.start_at|date:"H:i" }}
+                {% if appointment.cabinet %} · {{ appointment.cabinet.code }}{% endif %}
+              </p>
+              {% if appointment.service_type %}
+                <p class="muted">{{ appointment.service_type }}</p>
+              {% endif %}
+              {% if appointment.visit_id and perms.visits.view_visit %}
+                <p><a class="table-link" href="{% url 'frontend:visit-detail' appointment.visit_id %}">Открыть визит</a></p>
+              {% endif %}
+
+              <div class="ticket-actions">
+                {% if perms.visits.change_appointment and appointment.status == "BOOKED" %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_date" value="{{ selected_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                    <input type="hidden" name="action" value="check_in">
+                    <button type="submit" class="btn btn-ghost btn-small">Отметить</button>
+                  </form>
+                {% endif %}
+
+                {% if perms.visits.add_visit and perms.visits.change_appointment %}
+                  {% if appointment.status == "BOOKED" or appointment.status == "CHECKED_IN" %}
+                    <form method="post">
+                      {% csrf_token %}
+                      <input type="hidden" name="selected_date" value="{{ selected_date|date:'Y-m-d' }}">
+                      <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                      <input type="hidden" name="action" value="start_visit">
+                      <button type="submit" class="btn btn-primary btn-small">Начать визит</button>
+                    </form>
+                  {% endif %}
+                {% endif %}
+
+                {% if perms.visits.change_appointment and appointment.status == "IN_ROOM" %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_date" value="{{ selected_date|date:'Y-m-d' }}">
+                    <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                    <input type="hidden" name="action" value="complete">
+                    <button type="submit" class="btn btn-ghost btn-small">Завершить</button>
+                  </form>
+                {% endif %}
+              </div>
+
+              {% if perms.visits.change_appointment and appointment.allowed_transitions %}
+                <form method="post" class="transition-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="selected_date" value="{{ selected_date|date:'Y-m-d' }}">
+                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                  <input type="hidden" name="action" value="transition">
+                  <select name="new_status" class="form-select">
+                    {% for transition in appointment.allowed_transitions %}
+                      <option value="{{ transition.code }}">{{ transition.label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-ghost btn-small">Сменить</button>
+                </form>
+              {% endif %}
+            </section>
+          {% empty %}
+            <article class="ticket ticket-empty">Пусто</article>
+          {% endfor %}
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

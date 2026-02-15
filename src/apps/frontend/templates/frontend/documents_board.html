@@ -1,0 +1,281 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Документы | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Контур документов</p>
+      <h1>Документы и медиа</h1>
+      <p class="muted">Вложения по пациенту/визиту/лаборатории, версии файлов и генерация PDF.</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <form method="get" class="toolbar">
+      <label class="toolbar-label">
+        <span>Поиск</span>
+        <input type="text" name="q" class="form-input" value="{{ query }}" placeholder="Пациент, тип, шаблон">
+      </label>
+      <button type="submit" class="btn btn-ghost">Найти</button>
+    </form>
+  </section>
+
+  {% if can_upload_document %}
+    <section class="panel">
+      <header class="panel-head">
+        <h2>Загрузить вложение</h2>
+      </header>
+      <form method="post" enctype="multipart/form-data" class="grid-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="upload_document">
+        <input type="hidden" name="q" value="{{ query }}">
+
+        <label class="field">
+          <span>Тип документа</span>
+          <select name="document_type" class="form-select">
+            {% for code, label in document_types %}
+              <option value="{{ code }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Название</span>
+          <input type="text" name="title" class="form-input" placeholder="Например, Рентген грудной клетки">
+        </label>
+        <label class="field">
+          <span>Тип привязки</span>
+          <select name="target_kind" class="form-select">
+            <option value="visit">Визит</option>
+            <option value="lab_order">Лабораторный заказ</option>
+            {% if pets_for_docs %}<option value="pet">Животное</option>{% endif %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Визит</span>
+          <select name="visit_id" class="form-select">
+            <option value="">-</option>
+            {% for visit in recent_visits %}
+              <option value="{{ visit.id }}">#{{ visit.id }} · {{ visit.pet.name }} · {{ visit.created_at|date:"d.m.Y H:i" }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Лабораторный заказ</span>
+          <select name="lab_order_id" class="form-select">
+            <option value="">-</option>
+            {% for order in recent_lab_orders %}
+              <option value="{{ order.id }}">#{{ order.id }} · {{ order.visit.pet.name }} · {{ order.ordered_at|date:"d.m.Y H:i" }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        {% if pets_for_docs %}
+          <label class="field">
+            <span>Животное</span>
+            <select name="pet_id" class="form-select">
+              <option value="">-</option>
+              {% for pet in pets_for_docs %}
+                <option value="{{ pet.id }}">{{ pet.name }} · {{ pet.owner.last_name }} {{ pet.owner.first_name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endif %}
+        <label class="field">
+          <span>Политика хранения</span>
+          <select name="storage_policy_id" class="form-select">
+            <option value="">По умолчанию</option>
+            {% for policy in storage_policies %}
+              <option value="{{ policy.id }}">{{ policy.name }} ({{ policy.max_file_size_mb }} MB)</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Файл</span>
+          <input type="file" name="file" class="form-input" required>
+        </label>
+        <label class="field">
+          <span>Описание</span>
+          <input type="text" name="description" class="form-input" placeholder="Краткое описание">
+        </label>
+        <label class="field">
+          <span>MIME type (опц.)</span>
+          <input type="text" name="mime_type" class="form-input" placeholder="image/jpeg, application/pdf">
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Загрузить</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if can_generate_document %}
+    <section class="panel">
+      <header class="panel-head">
+        <h2>Сгенерировать PDF по шаблону</h2>
+      </header>
+      <form method="post" class="grid-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="generate_document">
+        <input type="hidden" name="q" value="{{ query }}">
+        <label class="field">
+          <span>Шаблон</span>
+          <select name="template_id" class="form-select" required>
+            <option value="">Выберите шаблон</option>
+            {% for template in templates %}
+              <option value="{{ template.id }}">{{ template.name }} ({{ template.code }})</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Визит (опц.)</span>
+          <select name="visit_id" class="form-select">
+            <option value="">-</option>
+            {% for visit in recent_visits %}
+              <option value="{{ visit.id }}">#{{ visit.id }} · {{ visit.pet.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Лабораторный заказ (опц.)</span>
+          <select name="lab_order_id" class="form-select">
+            <option value="">-</option>
+            {% for order in recent_lab_orders %}
+              <option value="{{ order.id }}">#{{ order.id }} · {{ order.visit.pet.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>JSON payload</span>
+          <textarea name="payload_json" class="form-textarea" placeholder='{"doctor_name":"Иванов И.И."}'></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Сгенерировать PDF</button>
+        </div>
+      </form>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Клинические вложения</h2>
+    </header>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Тип</th>
+            <th>Привязка</th>
+            <th>Файл</th>
+            <th>Версия</th>
+            <th>Кто загрузил</th>
+            <th>Обновление</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in documents %}
+            <tr>
+              <td>#{{ doc.id }}</td>
+              <td>{{ doc.get_document_type_display }}</td>
+              <td>
+                {% if doc.visit_id %}
+                  Визит #{{ doc.visit_id }} · {{ doc.visit.pet.name }}
+                {% elif doc.lab_order_id %}
+                  Заказ #{{ doc.lab_order_id }} · {{ doc.lab_order.visit.pet.name }}
+                {% elif doc.pet_id %}
+                  Пациент {{ doc.pet.name }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if doc.file %}
+                  <a href="{{ doc.file.url }}" target="_blank" rel="noopener" class="table-link">{{ doc.title|default:doc.file.name }}</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge">v{{ doc.version }}</span>
+                {% if not doc.is_current %}<span class="badge badge-danger">архив</span>{% endif %}
+              </td>
+              <td>{{ doc.uploaded_by.full_name|default:doc.uploaded_by.email|default:"-" }}</td>
+              <td>
+                {% if can_replace_document and doc.is_current %}
+                  <form method="post" enctype="multipart/form-data" class="stack-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="replace_document">
+                    <input type="hidden" name="document_id" value="{{ doc.id }}">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="file" name="file" class="form-input" required>
+                    <button type="submit" class="btn btn-ghost btn-small">Новая версия</button>
+                  </form>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="muted">Документы не найдены.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Сгенерированные документы</h2>
+    </header>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Шаблон</th>
+            <th>Привязка</th>
+            <th>Файл</th>
+            <th>Дата</th>
+            <th>Кто сгенерировал</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for doc in generated_documents %}
+            <tr>
+              <td>#{{ doc.id }}</td>
+              <td>{{ doc.template.name|default:"-" }}</td>
+              <td>
+                {% if doc.visit_id %}
+                  Визит #{{ doc.visit_id }} · {{ doc.visit.pet.name }}
+                {% elif doc.lab_order_id %}
+                  Заказ #{{ doc.lab_order_id }}
+                {% elif doc.pet_id %}
+                  Пациент {{ doc.pet.name }}
+                {% elif doc.owner_id %}
+                  Владелец #{{ doc.owner_id }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if doc.file %}
+                  <a href="{{ doc.file.url }}" target="_blank" rel="noopener" class="table-link">Открыть PDF</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>{{ doc.generated_at|date:"d.m.Y H:i" }}</td>
+              <td>{{ doc.generated_by.full_name|default:doc.generated_by.email|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="muted">Сгенерированных документов нет.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

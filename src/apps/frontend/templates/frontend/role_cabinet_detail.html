@@ -1,0 +1,42 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}{{ role_title }} | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Ролевой кабинет</p>
+      <h1>{{ role_title }}</h1>
+      <p class="muted">{{ role_summary }}</p>
+    </div>
+    <a href="{% url 'frontend:role-cabinets' %}" class="btn btn-ghost">Назад к ролям</a>
+  </section>
+
+  <section class="grid-two">
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Ключевые возможности</h2>
+      </header>
+      <ul class="list">
+        {% for item in role_capabilities %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Рабочие зоны</h2>
+      </header>
+      {% if modules %}
+        <div class="quick-links">
+          {% for module in modules %}
+            <a href="{{ module.url }}" class="badge">{{ module.title }}</a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">Нет доступных модулей для этой роли в текущем скоупе.</p>
+      {% endif %}
+    </article>
+  </section>
+{% endblock %}

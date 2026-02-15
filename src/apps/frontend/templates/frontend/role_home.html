@@ -1,0 +1,75 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}{{ role_title }} | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Мой кабинет</p>
+      <h1>{{ role_title }}</h1>
+      <p class="muted">{{ role_subtitle }} · {{ today|date:"d.m.Y" }}</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Переключение роли</h2>
+    </header>
+    <div class="quick-links">
+      {% for item in switch_roles %}
+        <a href="{{ item.url }}" class="badge{% if item.active %} badge-active{% endif %}">
+          {{ item.title }}
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="kpi-grid">
+    {% for item in kpis %}
+      <article class="kpi-card">
+        <h2>{{ item.label }}</h2>
+        <p>{{ item.value }}</p>
+        {% if item.note %}
+          <small class="muted">{{ item.note }}</small>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  {% if quick_links %}
+    <section class="panel">
+      <header class="panel-head">
+        <h2>Быстрые действия</h2>
+      </header>
+      <div class="quick-links">
+        {% for item in quick_links %}
+          <a href="{{ item.url }}" class="btn btn-ghost btn-small">{{ item.title }}</a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="grid-two">
+    {% for panel in panels %}
+      <article class="panel">
+        <header class="panel-head">
+          <h2>{{ panel.title }}</h2>
+        </header>
+        <ul class="list">
+          {% for row in panel.rows %}
+            <li>
+              {% if row.url %}
+                <a href="{{ row.url }}" class="table-link">{{ row.title }}</a>
+              {% else %}
+                <strong>{{ row.title }}</strong>
+              {% endif %}
+              <span class="muted">{{ row.meta }}</span>
+            </li>
+          {% empty %}
+            <li class="muted">Нет данных.</li>
+          {% endfor %}
+        </ul>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

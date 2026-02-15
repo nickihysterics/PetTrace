@@ -1,0 +1,217 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Визит #{{ visit.id }} | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Клиническая карта</p>
+      <h1>Визит #{{ visit.id }} · {{ visit.pet.name }}</h1>
+      <p class="muted">{{ visit.owner.last_name }} {{ visit.owner.first_name }} · {{ visit.owner.phone }}</p>
+    </div>
+    <a href="{% url 'frontend:appointments-board' %}" class="btn btn-ghost">К расписанию</a>
+  </section>
+
+  <section class="panel">
+    <div class="status-row">
+      <span class="badge">{{ visit.get_status_display }}</span>
+      {% if visit.branch %}<span class="badge">{{ visit.branch.name }}</span>{% endif %}
+      {% if visit.cabinet %}<span class="badge">{{ visit.cabinet.code }}</span>{% endif %}
+      {% if visit.room %}<span class="badge">Кабинет: {{ visit.room }}</span>{% endif %}
+    </div>
+
+    {% if perms.visits.change_visit and visit_transition_options %}
+      <form method="post" class="toolbar">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="visit_transition">
+        <select name="new_status" class="form-select">
+          {% for status_option in visit_transition_options %}
+            <option value="{{ status_option.code }}">{{ status_option.label }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="notes" class="form-input" placeholder="Комментарий к переходу">
+        <button type="submit" class="btn btn-ghost">Сменить статус</button>
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Медицинская часть</h2>
+    </header>
+    <form method="post" class="grid-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_visit">
+
+      {% for field in visit_form %}
+        <label class="field">
+          <span>{{ field.label }}</span>
+          {{ field }}
+          {% if field.errors %}
+            <small class="field-error">{{ field.errors|join:", " }}</small>
+          {% endif %}
+        </label>
+      {% endfor %}
+
+      {% if perms.visits.change_visit %}
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+        </div>
+      {% endif %}
+    </form>
+  </section>
+
+  <section class="grid-two">
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Диагнозы</h2>
+      </header>
+      <ul class="list">
+        {% for diagnosis in diagnoses %}
+          <li>
+            <strong>{{ diagnosis.title }}</strong>
+            {% if diagnosis.code %}<small>({{ diagnosis.code }})</small>{% endif %}
+            {% if diagnosis.is_primary %}<span class="badge">Основной</span>{% endif %}
+          </li>
+        {% empty %}
+          <li class="muted">Диагнозы не добавлены</li>
+        {% endfor %}
+      </ul>
+
+      {% if perms.visits.add_diagnosis %}
+        <form method="post" class="stack-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_diagnosis">
+          {% for field in diagnosis_form %}
+            <label class="field">
+              <span>{{ field.label }}</span>
+              {{ field }}
+              {% if field.errors %}
+                <small class="field-error">{{ field.errors|join:", " }}</small>
+              {% endif %}
+            </label>
+          {% endfor %}
+          <button type="submit" class="btn btn-ghost">Добавить диагноз</button>
+        </form>
+      {% endif %}
+    </article>
+
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Назначения</h2>
+      </header>
+      <ul class="list">
+        {% for prescription in prescriptions %}
+          <li>
+            <strong>{{ prescription.medication_name }}</strong>
+            <small>{{ prescription.dosage }}, {{ prescription.frequency }}, {{ prescription.duration_days }} дн.</small>
+          </li>
+        {% empty %}
+          <li class="muted">Назначений нет</li>
+        {% endfor %}
+      </ul>
+
+      {% if perms.visits.add_prescription %}
+        <form method="post" class="stack-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_prescription">
+          {% for field in prescription_form %}
+            <label class="field">
+              <span>{{ field.label }}</span>
+              {{ field }}
+              {% if field.errors %}
+                <small class="field-error">{{ field.errors|join:", " }}</small>
+              {% endif %}
+            </label>
+          {% endfor %}
+          <button type="submit" class="btn btn-ghost">Добавить назначение</button>
+        </form>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="grid-two">
+    <article class="panel">
+      <header class="panel-head">
+        <h2>Процедуры</h2>
+      </header>
+      <ul class="list">
+        {% for procedure in procedures %}
+          <li>
+            <strong>{{ procedure.name }}</strong>
+            <small>{{ procedure.get_status_display }}</small>
+          </li>
+        {% empty %}
+          <li class="muted">Процедуры не назначены</li>
+        {% endfor %}
+      </ul>
+
+      {% if perms.visits.add_procedureorder %}
+        <form method="post" class="stack-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_procedure">
+          {% for field in procedure_form %}
+            <label class="field">
+              <span>{{ field.label }}</span>
+              {{ field }}
+              {% if field.errors %}
+                <small class="field-error">{{ field.errors|join:", " }}</small>
+              {% endif %}
+            </label>
+          {% endfor %}
+          <button type="submit" class="btn btn-ghost">Добавить процедуру</button>
+        </form>
+      {% endif %}
+    </article>
+
+    <article class="panel">
+      <header class="panel-head">
+        <h2>События визита</h2>
+      </header>
+      <ul class="list">
+        {% for event in visit_events %}
+          <li>
+            <strong>{{ event.from_status_label|default:"-" }} → {{ event.to_status_label }}</strong>
+            <small>{{ event.event_at|date:"d.m.Y H:i" }}{% if event.actor %} · {{ event.actor.email }}{% endif %}</small>
+          </li>
+        {% empty %}
+          <li class="muted">Событий нет</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </section>
+
+  {% if can_view_clinical_alerts %}
+    <section class="panel">
+      <header class="panel-head">
+        <h2>Клинические предупреждения</h2>
+      </header>
+      <ul class="list">
+        {% for alert in clinical_alerts %}
+          <li>
+            <strong>{{ alert.severity }}</strong>
+            <small>{{ alert.message }}</small>
+          </li>
+        {% empty %}
+          <li class="muted">Активных предупреждений нет</li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  <section class="panel">
+    <header class="panel-head">
+      <h2>Лабораторные заказы визита</h2>
+    </header>
+    <ul class="list">
+      {% for order in lab_orders %}
+        <li>
+          <strong>#{{ order.id }}</strong>
+          <small>{{ order.get_status_display }} · Срок (SLA): {{ order.sla_minutes }} мин</small>
+        </li>
+      {% empty %}
+        <li class="muted">Заказы отсутствуют</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

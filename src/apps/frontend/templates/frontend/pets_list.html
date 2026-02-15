@@ -1,0 +1,59 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Животные | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Пациенты</p>
+      <h1>Карточки животных</h1>
+    </div>
+    {% if perms.pets.add_pet %}
+      <a href="{% url 'frontend:pet-create' %}" class="btn btn-primary">Новое животное</a>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <form method="get" class="toolbar">
+      <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Поиск по кличке, ID микрочипа, владельцу"
+        class="form-input"
+      >
+      <button type="submit" class="btn btn-ghost">Найти</button>
+    </form>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Кличка</th>
+            <th>Вид/Порода</th>
+            <th>Владелец</th>
+            <th>Вес</th>
+            <th>ID микрочипа</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pet in pets %}
+            <tr>
+              <td>{{ pet.name }}</td>
+              <td>{{ pet.get_species_display }} / {{ pet.breed|default:"-" }}</td>
+              <td>{{ pet.owner.last_name }} {{ pet.owner.first_name }}</td>
+              <td>{{ pet.weight_kg|default:"-" }}</td>
+              <td><code>{{ pet.microchip_id|default:"-" }}</code></td>
+              <td><span class="badge">{{ pet.get_status_display }}</span></td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="muted">Ничего не найдено</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

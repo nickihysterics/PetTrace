@@ -1,0 +1,39 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Вход | PetTrace{% endblock %}
+{% block body_class %}auth-shell{% endblock %}
+
+{% block content %}
+  <section class="auth-card">
+    <header class="auth-header">
+      <p class="eyebrow">Ветеринарная информационная система</p>
+      <h1>Рабочая панель PetTrace</h1>
+      <p>Вход по корпоративному аккаунту для работы с приемами, лабораторией и CRM.</p>
+    </header>
+
+    <form method="post" class="stack-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <label>
+        <span>{{ form.username.label }}</span>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <small class="field-error">{{ form.username.errors|join:", " }}</small>
+        {% endif %}
+      </label>
+
+      <label>
+        <span>{{ form.password.label }}</span>
+        {{ form.password }}
+        {% if form.password.errors %}
+          <small class="field-error">{{ form.password.errors|join:", " }}</small>
+        {% endif %}
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    </form>
+  </section>
+{% endblock %}

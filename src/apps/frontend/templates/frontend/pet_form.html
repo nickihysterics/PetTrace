@@ -1,0 +1,36 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Новое животное | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head inline">
+    <div>
+      <p class="eyebrow">Пациенты</p>
+      <h1>Новое животное</h1>
+    </div>
+    <a href="{% url 'frontend:pets-list' %}" class="btn btn-ghost">Назад</a>
+  </section>
+
+  <section class="panel">
+    <form method="post" class="grid-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="form-errors">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      {% for field in form %}
+        <label class="field">
+          <span>{{ field.label }}</span>
+          {{ field }}
+          {% if field.errors %}
+            <small class="field-error">{{ field.errors|join:", " }}</small>
+          {% endif %}
+        </label>
+      {% endfor %}
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

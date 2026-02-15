@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pettrace
+          POSTGRES_USER: pettrace
+          POSTGRES_PASSWORD: pettrace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pettrace -d pettrace"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_ENV: test
+      DJANGO_SECRET_KEY: ci-secret-key
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost,http://127.0.0.1
+      DATABASE_URL: postgres://pettrace:pettrace@localhost:5432/pettrace
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements/dev.txt
+
+      - name: Wait for PostgreSQL
+        run: |
+          python - <<'PY'
+          import time
+
+          import psycopg
+
+          dsn = "postgres://pettrace:pettrace@localhost:5432/pettrace"
+          for attempt in range(30):
+              try:
+                  with psycopg.connect(dsn, connect_timeout=2) as conn:
+                      with conn.cursor() as cur:
+                          cur.execute("select 1")
+                  break
+              except Exception:
+                  if attempt == 29:
+                      raise
+                  time.sleep(2)
+          PY
+
+      - name: Lint
+        run: ruff check src
+
+      - name: Run Django tests
+        run: python src/manage.py test apps --noinput

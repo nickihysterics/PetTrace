@@ -1,0 +1,80 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PetTrace | Ветклиника{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'frontend/style.css' %}">
+</head>
+<body class="{% block body_class %}app-shell{% endblock %}">
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <div class="bg-grid"></div>
+
+  {% if user.is_authenticated %}
+    <header class="topbar">
+      <a class="brand" href="{% url 'frontend:dashboard' %}">
+        <span class="brand-mark">PT</span>
+        <span class="brand-text">
+          <strong>PetTrace</strong>
+          <small>Операционная панель</small>
+        </span>
+      </a>
+
+      <nav class="menu">
+        <a href="{% url 'frontend:role-home' %}">Мой кабинет</a>
+        <a href="{% url 'frontend:dashboard' %}">Дашборд</a>
+        <a href="{% url 'frontend:role-cabinets' %}">Ролевые кабинеты</a>
+        {% if perms.owners.view_owner %}
+          <a href="{% url 'frontend:owners-list' %}">Владельцы</a>
+        {% endif %}
+        {% if perms.pets.view_pet %}
+          <a href="{% url 'frontend:pets-list' %}">Животные</a>
+        {% endif %}
+        {% if perms.visits.view_appointment %}
+          <a href="{% url 'frontend:appointments-board' %}">Приемы</a>
+        {% endif %}
+        {% if perms.labs.view_laborder %}
+          <a href="{% url 'frontend:labs-board' %}">Лаборатория</a>
+        {% endif %}
+        {% if perms.documents.view_clinicaldocument or perms.documents.view_generateddocument or perms.documents.view_documenttemplate %}
+          <a href="{% url 'frontend:documents-board' %}">Документы</a>
+        {% endif %}
+        {% if perms.visits.view_hospitalization %}
+          <a href="{% url 'frontend:hospitalization-board' %}">Стационар</a>
+        {% endif %}
+        {% if perms.visits.view_medicationadministration %}
+          <a href="{% url 'frontend:mar-board' %}">MAR</a>
+        {% endif %}
+        {% if perms.billing.view_invoice %}
+          <a href="{% url 'frontend:finance-board' %}">Финансы</a>
+        {% endif %}
+      </nav>
+
+      <div class="user-panel">
+        <div class="user-meta">
+          <span>{{ user.full_name|default:user.email }}</span>
+          <small>{{ user.email }}</small>
+        </div>
+        <form method="post" action="{% url 'frontend:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost">Выход</button>
+        </form>
+      </div>
+    </header>
+  {% endif %}
+
+  <main class="page-wrap{% if not user.is_authenticated %} guest{% endif %}">
+    {% if messages %}
+      <section class="flash-stack">
+        {% for message in messages %}
+          <article class="flash flash-{{ message.tags|default:'info' }}">{{ message }}</article>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

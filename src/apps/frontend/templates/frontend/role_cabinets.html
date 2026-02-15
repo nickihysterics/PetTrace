@@ -1,0 +1,41 @@
+{% extends "frontend/base.html" %}
+
+{% block title %}Ролевые кабинеты | PetTrace{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <p class="eyebrow">RBAC</p>
+    <h1>Кабинеты по ролям</h1>
+    <p class="muted">Быстрый вход в функциональные зоны по текущим правам пользователя.</p>
+  </section>
+
+  {% if role_cards %}
+    <section class="role-grid">
+      {% for role in role_cards %}
+        <article class="panel role-card">
+          <header class="panel-head inline">
+            <h2>{{ role.title }}</h2>
+            <a href="{{ role.detail_url }}" class="btn btn-ghost btn-small">Открыть кабинет</a>
+          </header>
+          <p class="muted">{{ role.summary }}</p>
+
+          <ul class="list">
+            {% for item in role.capabilities %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+
+          <div class="quick-links">
+            {% for module in role.modules %}
+              <a href="{{ module.url }}" class="badge">{{ module.title }}</a>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="panel">
+      <p class="muted">Для текущего пользователя нет назначенных ролевых кабинетов.</p>
+    </section>
+  {% endif %}
+{% endblock %}
