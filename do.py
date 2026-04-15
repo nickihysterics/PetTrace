@@ -89,6 +89,14 @@ def cmd_up(args: argparse.Namespace) -> None:
     run(command, dry_run=args.dry_run)
 
 
+def infra_up(*, build: bool, dry_run: bool) -> None:
+    command = compose("up", "-d")
+    if build:
+        command.append("--build")
+    command.extend(["postgres", "redis"])
+    run(command, dry_run=dry_run)
+
+
 def cmd_bootstrap(args: argparse.Namespace) -> None:
     commands = [
         web_manage("migrate", "--noinput"),
@@ -133,8 +141,7 @@ def cmd_down(args: argparse.Namespace) -> None:
 def cmd_all(args: argparse.Namespace) -> None:
     ensure_env(force=args.force_env, dry_run=args.dry_run)
 
-    up_args = argparse.Namespace(build=args.build, dry_run=args.dry_run)
-    cmd_up(up_args)
+    infra_up(build=args.build, dry_run=args.dry_run)
 
     stage_args = argparse.Namespace(dry_run=args.dry_run)
     cmd_bootstrap(stage_args)
@@ -149,6 +156,9 @@ def cmd_all(args: argparse.Namespace) -> None:
 
     cmd_demo_users(stage_args)
     cmd_metrics(stage_args)
+
+    up_args = argparse.Namespace(build=False, dry_run=args.dry_run)
+    cmd_up(up_args)
 
     if args.with_qa:
         cmd_qa(stage_args)

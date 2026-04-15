@@ -65,11 +65,11 @@ run_compose() {
 }
 
 run_manage() {
-  run docker compose exec -T web python manage.py "$@"
+  run docker compose run --rm web python manage.py "$@"
 }
 
 run_web_cmd() {
-  run docker compose exec -T web "$@"
+  run docker compose run --rm web "$@"
 }
 
 parse_args() {
@@ -166,12 +166,13 @@ main() {
   parse_args "$@"
   check_prerequisites
 
-  log_step "Подъем сервисов Docker Compose (profile=${PROFILE})"
   if [[ "$BUILD" == true ]]; then
-    run_compose --profile "$PROFILE" up -d --build
-  else
-    run_compose --profile "$PROFILE" up -d
+    log_step "Сборка образов Docker Compose (profile=${PROFILE})"
+    run_compose --profile "$PROFILE" build
   fi
+
+  log_step "Подъем инфраструктурных сервисов Docker Compose"
+  run_compose up -d postgres redis
 
   log_step "Инфраструктурный bootstrap Django"
   run_manage migrate --noinput
@@ -186,6 +187,9 @@ main() {
     log_step "Заполнение базы демо-данными"
     run_manage seed_demo_data --reset --bulk-cases "$BULK_CASES" --days "$DAYS"
   fi
+
+  log_step "Подъем сервисов Docker Compose (profile=${PROFILE})"
+  run_compose --profile "$PROFILE" up -d
 
   if [[ "$RUN_LINT" == true ]]; then
     log_step "Проверка code style (ruff)"

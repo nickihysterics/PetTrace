@@ -1,10 +1,11 @@
-﻿services:
+services:
   postgres:
     image: postgres:16-alpine
     container_name: pettrace-postgres
+    restart: unless-stopped
     env_file: .env
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT_BIND:-5432:5432}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -17,8 +18,9 @@
   redis:
     image: redis:7-alpine
     container_name: pettrace-redis
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT_BIND:-6379:6379}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -30,6 +32,7 @@
       context: .
       dockerfile: Dockerfile
     container_name: pettrace-web
+    restart: unless-stopped
     env_file: .env
     volumes:
       - .:/app
@@ -42,14 +45,20 @@
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/', timeout=5)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     ports:
-      - "8000:8000"
+      - "${WEB_PORT_BIND:-8000:8000}"
 
   celery_worker:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: pettrace-celery-worker
+    restart: unless-stopped
     env_file: .env
     volumes:
       - .:/app
@@ -66,6 +75,7 @@
       context: .
       dockerfile: Dockerfile
     container_name: pettrace-celery-beat
+    restart: unless-stopped
     env_file: .env
     volumes:
       - .:/app
@@ -82,6 +92,7 @@
       context: .
       dockerfile: Dockerfile
     container_name: pettrace-flower
+    restart: unless-stopped
     env_file: .env
     volumes:
       - .:/app
@@ -91,16 +102,18 @@
       redis:
         condition: service_healthy
     ports:
-      - "5555:5555"
+      - "${FLOWER_PORT_BIND:-5555:5555}"
 
   nginx:
     image: nginx:1.27-alpine
     container_name: pettrace-nginx
+    restart: unless-stopped
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     profiles: ["prod"]
     ports:
-      - "80:80"
+      - "${NGINX_PORT_BIND:-80:80}"
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - static_volume:/app/staticfiles:ro

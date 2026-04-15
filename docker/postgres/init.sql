@@ -1,1 +1,1 @@
-﻿-- DB bootstrap placeholder.
+-- DB bootstrap placeholder.
