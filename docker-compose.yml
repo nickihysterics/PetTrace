@@ -108,6 +108,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pettrace-pgadmin
     restart: unless-stopped
+    entrypoint: ["/pgadmin-entrypoint.sh"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,8 +116,10 @@ services:
       PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-pgadmin@pettrace.dev}"
       PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-change-me-please}"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/entrypoint.sh:/pgadmin-entrypoint.sh:ro
       - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
     ports:
       - "${PGADMIN_PORT_BIND:-5050:80}"
