@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "PetTrace PostgreSQL",
+      "Group": "PetTrace",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "pettrace",
+      "Username": "pettrace",
+      "SSLMode": "prefer",
+      "SavePassword": false
+    }
+  }
+}

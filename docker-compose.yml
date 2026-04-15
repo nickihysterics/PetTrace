@@ -104,6 +104,23 @@ services:
     ports:
       - "${FLOWER_PORT_BIND:-5555:5555}"
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pettrace-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-pgadmin@pettrace.dev}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-change-me-please}"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "${PGADMIN_PORT_BIND:-5050:80}"
+
   nginx:
     image: nginx:1.27-alpine
     container_name: pettrace-nginx
@@ -120,6 +137,7 @@ services:
       - media_volume:/app/media:ro
 
 volumes:
+  pgadmin_data:
   postgres_data:
   static_volume:
   media_volume:
